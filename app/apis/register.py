@@ -23,7 +23,7 @@ user_model = register_ns.model( "User",{
     "email":fields.String(required=True, description="The email of the user"),
     "password":fields.String(required=True, description="The password of the user"),
     "role":fields.Boolean(required=True, description="The role of the user")
-}),
+})
 
 login_model = register_ns.model("Login", {
     "email": fields.String(required=True, description="The email of the user"),
