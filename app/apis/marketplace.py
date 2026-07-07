@@ -49,3 +49,31 @@ class ListingResource(Resource):
 
         listing_id = marketplace.add_listing(item, listed_by, price, quantity)
         return {"message": "Listing created successfully", "listing_id": listing_id}, HTTPStatus.CREATED
+    
+    def get(self):
+        """Get all listings"""
+        listings = marketplace.get_all_listings()
+        return {"listings": listings}, HTTPStatus.OK
+
+class BuyResource(Resource):
+    @marketplace_ns.doc(security='Bearer Auth')
+    @marketplace_ns.response(200, "Purchase successful")
+    @marketplace_ns.response(400, "Invalid input")
+    @marketplace_ns.response(404, "Listing not found")
+    @token_required
+    @role_required("buyer")
+    def post(self):
+        """Buy an item from a listing"""
+        data = request.get_json() or {}
+        listing_id = data.get("listing_id")
+        quantity = data.get("quantity")
+        listing = marketplace.get_listing_by_id(listing_id)
+        if not all([listing_id, quantity]):
+            return {"message": "Listing ID and quantity are required"}, HTTPStatus.BAD_REQUEST
+
+        result = marketplace.update_quantity(listing_id, -quantity)
+        if result["message"] == "Quantity updated successfully":
+            return {"message": "Purchase successful. Total Cost: ${}".format(quantity * listing["price"])}, HTTPStatus.OK
+        else:
+            return {"message": result["message"]}, HTTPStatus.NOT_FOUND
+        

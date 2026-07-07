@@ -21,7 +21,10 @@ def add_listing(item: str, listed_by: str, price: float, quantity: int) -> dict:
 
 def update_quantity(listing_id: str, delta: int) -> dict:
     listings_col = _get_listing_collection_()
+    if listings_col.find_one({"_id": ObjectId(listing_id)})["quantity"] < -delta:
+        return {"message": "Insufficient quantity available"}
     result = listings_col.update_one({"_id": ObjectId(listing_id)}, {"$inc": {"quantity": delta}})
+    
     if result.modified_count == 1:
         return {"message": "Quantity updated successfully"}
     else:
@@ -34,3 +37,15 @@ def update_price(listing_id: str, new_price: float) -> dict:
         return {"message": "Price updated successfully"}
     else:
         return {"message": "Listing not found or price unchanged"}
+    
+def get_listing_by_id(listing_id: str) -> dict | None:
+    listings_col = _get_listing_collection_()
+    listing = listings_col.find_one({"_id": ObjectId(listing_id)})
+    if listing:
+        return serialize_item(listing)
+    return None
+
+def get_all_listings() -> list:
+    listings_col = _get_listing_collection_()
+    listings = listings_col.find()
+    return serialize_items(listings)
