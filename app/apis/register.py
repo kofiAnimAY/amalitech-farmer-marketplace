@@ -22,13 +22,22 @@ user_model = register_ns.model( "User",{
     "username":fields.String(required=True, description="The username of the user"),
     "email":fields.String(required=True, description="The email of the user"),
     "password":fields.String(required=True, description="The password of the user"),
-    "role":fields.Boolean(required=True, description="The role of the user")
+    "role":fields.String(required=True, description="The role of the user: farmer or buyer")
 })
 
 login_model = register_ns.model("Login", {
     "email": fields.String(required=True, description="The email of the user"),
     "password": fields.String(required=True, description="The password of the user")
 })
+
+authorizations = {
+    'Bearer Auth': {
+        'type': 'apiKey',
+        'in': 'header',
+        'name': 'Authorization',
+        'description': "Use 'Bearer <your_token>'"
+    }
+}
 
 def token_required(f):
     @wraps(f)
@@ -40,12 +49,25 @@ def token_required(f):
         try:
             payload = jwt.decode(token, JWT_KEY, algorithms=["HS256"])
             request.user_id = payload["user_id"]
+            request.user_role = payload.get("role", "buyer")
         except jwt.ExpiredSignatureError:
             return {"message": "Token has expired"}, 401
         except jwt.InvalidTokenError:
             return {"message": "Invalid token"}, 401
         return f(*args, **kwargs)
     return decorated
+
+
+def role_required(*allowed_roles):
+    def decorator(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            user_role = getattr(request, "user_role", None)
+            if not user_role or user_role not in allowed_roles:
+                return {"message": "Forbidden"}, HTTPStatus.FORBIDDEN
+            return f(*args, **kwargs)
+        return decorated
+    return decorator
 
 
 @register_ns.route("/register")
@@ -79,6 +101,7 @@ class Login(Resource):
 
         token = jwt.encode({
             "user_id": str(user["_id"]),
+            "role": user.get("role", "buyer"),
             "exp": datetime.now() + timedelta(hours=2)
         }, JWT_KEY, algorithm="HS256")
 
