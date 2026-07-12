@@ -49,7 +49,7 @@ def token_required(f):
         try:
             payload = jwt.decode(token, JWT_KEY, algorithms=["HS256"])
             request.user_id = payload["user_id"]
-            request.user_role = payload.get("role", "buyer")
+            request.user_role = payload.get("role")
         except jwt.ExpiredSignatureError:
             return {"message": "Token has expired"}, 401
         except jwt.InvalidTokenError:

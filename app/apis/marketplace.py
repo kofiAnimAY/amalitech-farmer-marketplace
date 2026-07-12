@@ -24,11 +24,17 @@ marketplace_ns = Namespace(
 
 listing_model = marketplace_ns.model("Listing", {
     "item": fields.String(required=True, description="The item being listed"),
-    "listed_by": fields.String(required=True, description="The user ID of the person registering the listing"),
+    # "listed_by": fields.String(required=True, description="The user ID of the person registering the listing"),
     "price": fields.Float(required=True, description="The price per unit of the item"),
     "quantity": fields.Integer(required=True, description="The quantity of the item available")
 })
 
+buying_model = marketplace_ns.model("Buy", {
+    "listing_id": fields.String(required=True, description="The ID of the listing to buy from"),
+    "quantity": fields.Integer(required=True, description="The quantity of the item to buy")
+})
+
+@marketplace_ns.route("/listings")
 class ListingResource(Resource):
     @marketplace_ns.doc(security='Bearer Auth')
     @marketplace_ns.expect(listing_model)
@@ -55,8 +61,10 @@ class ListingResource(Resource):
         listings = marketplace.get_all_listings()
         return {"listings": listings}, HTTPStatus.OK
 
+@marketplace_ns.route("/buy")
 class BuyResource(Resource):
     @marketplace_ns.doc(security='Bearer Auth')
+    @marketplace_ns.expect(buying_model)
     @marketplace_ns.response(200, "Purchase successful")
     @marketplace_ns.response(400, "Invalid input")
     @marketplace_ns.response(404, "Listing not found")
@@ -64,7 +72,7 @@ class BuyResource(Resource):
     @role_required("buyer")
     def post(self):
         """Buy an item from a listing"""
-        data = request.get_json() or {}
+        data = request.json
         listing_id = data.get("listing_id")
         quantity = data.get("quantity")
         listing = marketplace.get_listing_by_id(listing_id)

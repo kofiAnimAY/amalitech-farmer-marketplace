@@ -1,4 +1,4 @@
-from app.db.constants import EVENT_COLLECTION, EVENT_TITLE, DATE,IS_RECURRING, START_TIME, END_TIME, LOCATION, ID,RECURRENCE_ID
+# from app.db.constants import EVENT_COLLECTION, EVENT_TITLE, DATE,IS_RECURRING, START_TIME, END_TIME, LOCATION, ID,RECURRENCE_ID
 from app.db.utils import serialize_item, serialize_items
 from app.db import DB
 from bson.objectid import ObjectId
