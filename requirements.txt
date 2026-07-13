@@ -1,0 +1,13 @@
+flask
+flask-restx
+flask_cors
+pymongo
+werkzeug
+python-dotenv
+flask-jwt-extended
+mongomock
+gunicorn
+requests
+python-dateutil
+boto3
+Flask-APScheduler
