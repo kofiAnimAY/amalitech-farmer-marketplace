@@ -1,6 +1,7 @@
 from app.config import Config
 from app.db import DB
-
+from app.apis.register import register_ns
+from app.apis.marketplace import marketplace_ns
 
 from http import HTTPStatus
 from flask import Flask
@@ -26,7 +27,8 @@ def create_app():
     api.init_app(app)
 
     # Namespace routing
-
+    api.add_namespace(register_ns)
+    api.add_namespace(marketplace_ns)
 
     @api.errorhandler(Exception)
     def handle_input_validation_error(error):
