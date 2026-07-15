@@ -198,7 +198,7 @@ class OrderResource(Resource):
 
         if not order_id:
             return {"message": "Order ID is required"}, HTTPStatus.BAD_REQUEST
-        
+        order=order.get_order_by_id(order_id)
         listing_id=order.get("listing_id")
         if order.check_order_quantity(order_id,listing_id):
             result = order.update_order_status(order_id)
@@ -208,6 +208,8 @@ class OrderResource(Resource):
         if "message" in result and result["message"] != "Order status updated successfully":
             return {"message": result["message"]}, HTTPStatus.NOT_FOUND
         
+        if order.get("status") == 2:  # If the order is fulfilled, reduce the listing quantity
+            listing.update_quantity(listing_id, -order.get("quantity"))
         
         
         return {"message": "Order status updated successfully"}, HTTPStatus.OK
