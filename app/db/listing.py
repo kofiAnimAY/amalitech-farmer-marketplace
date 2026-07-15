@@ -1,6 +1,7 @@
 # from app.db.constants import EVENT_COLLECTION, EVENT_TITLE, DATE,IS_RECURRING, START_TIME, END_TIME, LOCATION, ID,RECURRENCE_ID
 from app.db.utils import serialize_item, serialize_items
 from app.db import DB
+from app.db.constants import REGIONS, CATEGORIES, UNITS
 from bson.objectid import ObjectId
 from http import HTTPStatus
 from datetime import datetime,timedelta,date,time
@@ -8,16 +9,45 @@ from datetime import datetime,timedelta,date,time
 def _get_listing_collection_():
     return DB.get_collection("listings")
 
-def add_listing(item: str, listed_by: str, price: float, quantity: int, description: str = None) -> dict:
+def add_listing(item: str, listed_by: str, price: float, quantity: int, description: str = None,
+                location: str = None, category: str = None, unit: str = None, harvest_date: str = None) -> str:
     listings_col = _get_listing_collection_()
+
+    # Validate enumerated fields only if provided
+    if location is not None and location not in REGIONS:
+        raise ValueError(f"Invalid location. Allowed values: {REGIONS}")
+    if category is not None and category not in CATEGORIES:
+        raise ValueError(f"Invalid category. Allowed values: {CATEGORIES}")
+    if unit is not None and unit not in UNITS:
+        raise ValueError(f"Invalid unit. Allowed values: {UNITS}")
+
+    # Parse harvest_date
+    harvest_dt = None
+    if harvest_date:
+        try:
+            # Expecting YYYY-MM-DD
+            h_date = date.fromisoformat(harvest_date)
+        except Exception:
+            try:
+                h_date = datetime.fromisoformat(harvest_date).date()
+            except Exception:
+                raise ValueError("Invalid harvest_date format. Use YYYY-MM-DD or ISO format.")
+        harvest_dt = datetime.combine(h_date, time())
+
     listing_data = {
         "item": item,
         "listed_by": listed_by,
         "price": price,
-        "quantity": quantity
+        "quantity": quantity,
+        "location": location,
+        "category": category,
+        "unit": unit,
     }
     if description is not None:
         listing_data["description"] = description
+    if harvest_dt is not None:
+        listing_data["harvest_date"] = harvest_dt
+
     result = listings_col.insert_one(listing_data)
     return str(result.inserted_id)
 

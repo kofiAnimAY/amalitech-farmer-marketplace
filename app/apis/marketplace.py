@@ -9,6 +9,7 @@ from functools import wraps
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.apis import MSG
 from app.db import listing, order, DB
+from app.db.constants import REGIONS, CATEGORIES, UNITS
 from app.apis import register
 from app.apis.register import token_required, role_required
 
@@ -26,6 +27,11 @@ listing_model = marketplace_ns.model("Listing", {
     # "listed_by": fields.String(required=True, description="The user ID of the person registering the listing"),
     "price": fields.Float(required=True, description="The price per unit of the item"),
     "quantity": fields.Integer(required=True, description="The quantity of the item available")
+    ,
+    "location": fields.String(required=True, description="Region where the product is located", enum=REGIONS),
+    "category": fields.String(required=True, description="Product category", enum=CATEGORIES),
+    "unit": fields.String(required=True, description="Unit of measure", enum=UNITS),
+    "harvest_date": fields.String(required=True, description="Harvest date (YYYY-MM-DD)")
 })
 
 order_model = marketplace_ns.model("Order", {
@@ -67,10 +73,28 @@ class ListingResource(Resource):
         price = data.get("price")
         quantity = data.get("quantity")
 
-        if not all([item, listed_by, price, quantity]):
+        location = data.get("location")
+        category = data.get("category")
+        unit = data.get("unit")
+        harvest_date = data.get("harvest_date")
+
+        if not all([item, listed_by, price, quantity, location, category, unit, harvest_date]):
             return {"message": "All fields are required"}, HTTPStatus.BAD_REQUEST
 
-        listing_id = listing.add_listing(item, listed_by, price, quantity, description)
+        try:
+            listing_id = listing.add_listing(
+                item=item,
+                listed_by=listed_by,
+                price=price,
+                quantity=quantity,
+                description=description,
+                location=location,
+                category=category,
+                unit=unit,
+                harvest_date=harvest_date,
+            )
+        except ValueError as e:
+            return {"message": str(e)}, HTTPStatus.BAD_REQUEST
         return {"message": "Listing created successfully", "listing_id": listing_id}, HTTPStatus.CREATED
     
     def get(self):
@@ -79,10 +103,10 @@ class ListingResource(Resource):
         return {"listings": listings}, HTTPStatus.OK
     
     def _require_listing_owner(self, listing_id):
-        listing = listing.get_listing_by_id(listing_id)
-        if not listing:
+        listing_doc = listing.get_listing_by_id(listing_id)
+        if not listing_doc:
             return {"message": "Listing not found"}, HTTPStatus.NOT_FOUND
-        if listing.get("listed_by") != getattr(request, "user_id", None):
+        if listing_doc.get("listed_by") != getattr(request, "user_id", None):
             return {"message": "Forbidden"}, HTTPStatus.FORBIDDEN
         return None, None
 
@@ -198,9 +222,9 @@ class OrderResource(Resource):
 
         if not order_id:
             return {"message": "Order ID is required"}, HTTPStatus.BAD_REQUEST
-        order=order.get_order_by_id(order_id)
-        listing_id=order.get("listing_id")
-        if order.check_order_quantity(order_id,listing_id):
+        order_doc = order.get_order_by_id(order_id)
+        listing_id = order_doc.get("listing_id")
+        if order.check_order_quantity(order_id, listing_id):
             result = order.update_order_status(order_id)
         else:
             return {"message": "Insufficient quantity available"}, HTTPStatus.BAD_REQUEST
@@ -208,8 +232,8 @@ class OrderResource(Resource):
         if "message" in result and result["message"] != "Order status updated successfully":
             return {"message": result["message"]}, HTTPStatus.NOT_FOUND
         
-        if order.get("status") == 2:  # If the order is fulfilled, reduce the listing quantity
-            listing.update_quantity(listing_id, -order.get("quantity"))
+        if order_doc.get("status") == 2:  # If the order is fulfilled, reduce the listing quantity
+            listing.update_quantity(listing_id, -order_doc.get("quantity"))
         
         
         return {"message": "Order status updated successfully"}, HTTPStatus.OK
