@@ -23,13 +23,13 @@ REGIONS = [
 
 # Product categories
 CATEGORIES = [
-	"vegetables",
-	"fruits",
-	"grains_and_cereals",
-	"tubers_and_roots",
-	"legumes_and_nuts",
-	"herbs_and_spices",
-	"poultry_and_eggs",
+	"Vegetables",
+	"Fruits",
+	"Grains & Cereals",
+	"Tubers & Roots",
+	"Legumes & Nuts",
+	"Herbs & Spices",
+	"Poultry & Eggs",
 ]
 
 # Units of measure

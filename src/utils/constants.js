@@ -16,11 +16,32 @@ export const REGIONS = [
   'Greater Accra',
   'Ashanti',
   'Eastern',
-  'Central',
-  'Northern',
   'Volta',
+  'Oti',
+  'Central',
   'Western',
+  'Western North',
   'Bono',
+  'Bono East',
+  'Ahafo',
+  'Northern',
+  'Savannah',
+  'North East',
+  'Upper East',
+  'Upper West',
+];
+
+export const UNITS = [
+  'kg',
+  'g',
+  'crate',
+  'sack',
+  'bag',
+  'piece',
+  'dozen',
+  'litre',
+  'bundle',
+  'carton',
 ];
 
 export const AVAILABILITY = {

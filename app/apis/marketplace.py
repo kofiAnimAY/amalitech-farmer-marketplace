@@ -67,28 +67,28 @@ class ListingResource(Resource):
     def post(self):
         """Create a new listing"""
         data = request.get_json() or {}
-        item = data.get("item")
+        item_name = data.get("item_name")
         description = data.get("description")
         listed_by = getattr(request, "user_id", None)
         price = data.get("price")
-        quantity = data.get("quantity")
+        quantity = data.get("quantity") 
 
-        location = data.get("location")
+        region = data.get("region")
         category = data.get("category")
         unit = data.get("unit")
         harvest_date = data.get("harvest_date")
 
-        if not all([item, listed_by, price, quantity, location, category, unit, harvest_date]):
+        if not all([item_name, listed_by, price, quantity, region, category, unit, harvest_date]):
             return {"message": "All fields are required"}, HTTPStatus.BAD_REQUEST
 
         try:
             listing_id = listing.add_listing(
-                item=item,
+                item=item_name,
                 listed_by=listed_by,
                 price=price,
                 quantity=quantity,
                 description=description,
-                location=location,
+                location=region,
                 category=category,
                 unit=unit,
                 harvest_date=harvest_date,

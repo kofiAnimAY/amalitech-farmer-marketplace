@@ -27,7 +27,17 @@ export async function getProductById(id) {
  * TODO(backend): replace with POST /products
  */
 export async function createListing(payload) {
-  return post('/marketplace/listings', payload);
+  const normalized = {
+    item_name: payload.item_name || '',
+    description: payload.description || '',
+    price: Number(payload.price),
+    quantity: Number(payload.quantity ?? 0),
+    region: payload.region || '',
+    category: payload.category || '',
+    unit: payload.unit || '',
+    harvest_date: payload.harvest_date || '',
+  };
+  return post('/marketplace/listings', normalized);
 }
 
 /**

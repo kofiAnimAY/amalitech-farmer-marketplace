@@ -22,8 +22,8 @@ install-backend:
 	$(PIP) install -r requirements.txt
 
 install-frontend:
-	@echo "Installing frontend dependencies..."
-	$(NPM) install
+	@echo "Installing frontend dependencies from package-lock..."
+	$(NPM) ci
 
 run-backend:
 	@echo "Starting backend on http://0.0.0.0:8000"

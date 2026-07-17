@@ -54,7 +54,7 @@ export default function Register() {
     }
 
     try {
-      const newUser = await register({ ...form, role });
+      const newUser = await register({ ...form, role, username: form.name });
       notify(getWelcomeMessage(newUser, { returning: false }), 'success');
       navigate(role === 'farmer' ? '/farmer/dashboard' : '/buyer/dashboard', { replace: true });
     } catch {

@@ -8,7 +8,16 @@ from werkzeug.security import generate_password_hash, check_password_hash
 def _get_user_collection():
     return DB.get_collection("users")
 
-def add_user(username: str, password: str, email: str, role: str) -> dict:
+def add_user(
+    username: str,
+    password: str,
+    email: str,
+    role: str,
+    town: str | None = None,
+    farm_name: str | None = None,
+    region: str | None = None,
+    business_name: str | None = None,
+) -> dict:
     users_col = _get_user_collection()
     if get_user_by_email(email):
         return {"message": "Email already exists"}
@@ -18,7 +27,11 @@ def add_user(username: str, password: str, email: str, role: str) -> dict:
         "username": username,
         "password": hashed_pw,
         "email": email,
-        "role": normalized_role
+        "role": normalized_role,
+        "town": town or "",
+        "farmName": farm_name or "",
+        "region": region or "",
+        "businessName": business_name or "",
     }
     result = users_col.insert_one(user_data)
     return str(result.inserted_id)
