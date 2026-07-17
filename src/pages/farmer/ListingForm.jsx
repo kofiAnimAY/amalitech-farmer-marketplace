@@ -8,9 +8,7 @@ import Button from '../../components/common/Button';
 import Modal from '../../components/common/Modal';
 import PageTransition from '../../components/common/PageTransition';
 import { Skeleton } from '../../components/common/SkeletonLoader';
-import { CATEGORIES, REGIONS } from '../../utils/constants';
-
-const UNIT_SUGGESTIONS = ['kg', 'bag (50kg)', 'bag (100kg)', 'crate', 'basket', 'bunch', 'piece', 'head', 'tuber', 'bird', 'crate (30pcs)'];
+import { CATEGORIES, REGIONS, UNITS } from '../../utils/constants';
 
 const SAMPLE_IMAGES = {
   Vegetables: 'https://images.unsplash.com/photo-1546094096-0df4bcaaa337?w=640&h=480&fit=crop&auto=format&q=80',
@@ -23,15 +21,15 @@ const SAMPLE_IMAGES = {
 };
 
 const EMPTY_FORM = {
-  name: '',
+  item_name: '',
   category: CATEGORIES[0],
   description: '',
   price: '',
   unit: 'crate',
-  quantityAvailable: '',
+  quantity: '',
   region: REGIONS[0],
   image: '',
-  harvestedAt: new Date().toISOString().slice(0, 10),
+  harvest_date: new Date().toISOString().slice(0, 10),
 };
 
 export default function ListingForm() {
@@ -54,15 +52,15 @@ export default function ListingForm() {
     getProductById(id).then((p) => {
       if (!active) return;
       setForm({
-        name: p.name,
+        item_name: p.name,
         category: p.category,
         description: p.description,
         price: p.price,
         unit: p.unit,
-        quantityAvailable: p.quantityAvailable,
+        quantity: p.quantity,
         region: p.region,
         image: p.image,
-        harvestedAt: p.harvestedAt.slice(0, 10),
+        harvest_date: p.harvestedAt.slice(0, 10),
       });
       setLoading(false);
     });
@@ -135,6 +133,7 @@ export default function ListingForm() {
       </p>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+        {/*
         <div>
           <label className="field-label">Photo</label>
           <div className="flex items-center gap-3">
@@ -164,13 +163,14 @@ export default function ListingForm() {
             Photo uploads will connect to real storage once the backend is ready — for now, paste a URL.
           </p>
         </div>
+        */}
 
         <div>
           <label className="field-label">Produce name</label>
           <input
             required
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            value={form.item_name}
+            onChange={(e) => setForm({ ...form, item_name: e.target.value })}
             placeholder="e.g. Fresh Tomatoes"
             className="field-input"
           />
@@ -222,18 +222,16 @@ export default function ListingForm() {
           </div>
           <div>
             <label className="field-label">Unit</label>
-            <input
+            <select
               required
-              list="unit-suggestions"
               value={form.unit}
               onChange={(e) => setForm({ ...form, unit: e.target.value })}
               className="field-input"
-            />
-            <datalist id="unit-suggestions">
-              {UNIT_SUGGESTIONS.map((u) => (
-                <option key={u} value={u} />
+            >
+              {UNITS.map((u) => (
+                <option key={u} value={u}>{u}</option>
               ))}
-            </datalist>
+            </select>
           </div>
           <div>
             <label className="field-label">Quantity</label>
@@ -241,8 +239,8 @@ export default function ListingForm() {
               required
               type="number"
               min="0"
-              value={form.quantityAvailable}
-              onChange={(e) => setForm({ ...form, quantityAvailable: e.target.value })}
+              value={form.quantity}
+              onChange={(e) => setForm({ ...form, quantity: e.target.value })}
               placeholder="0"
               className="field-input"
             />
@@ -253,8 +251,8 @@ export default function ListingForm() {
           <label className="field-label">Harvest date</label>
           <input
             type="date"
-            value={form.harvestedAt}
-            onChange={(e) => setForm({ ...form, harvestedAt: e.target.value })}
+            value={form.harvest_date}
+            onChange={(e) => setForm({ ...form, harvest_date: e.target.value })}
             className="field-input"
             max={new Date().toISOString().slice(0, 10)}
           />
@@ -273,7 +271,7 @@ export default function ListingForm() {
       </form>
 
       <Modal open={deleteOpen} onClose={() => setDeleteOpen(false)} title="Delete this listing?">
-        <p className="text-sm text-ink-600">This will remove <span className="font-semibold text-ink-900">{form.name}</span> from the marketplace immediately.</p>
+        <p className="text-sm text-ink-600">This will remove <span className="font-semibold text-ink-900">{form.item_name}</span> from the marketplace immediately.</p>
         <div className="mt-5 flex gap-2">
           <Button variant="secondary" block onClick={() => setDeleteOpen(false)}>
             Cancel

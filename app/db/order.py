@@ -1,9 +1,8 @@
 from app.db.utils import serialize_item, serialize_items
-from app.db import DB
+from app.db import DB, listing
 from bson.objectid import ObjectId
 from http import HTTPStatus
 from datetime import datetime,timedelta,date,time
-import listing
 
 def _get_order_collection_():
     return DB.get_collection("orders")
@@ -17,11 +16,11 @@ def create_order(listing_id: str, quantity: int, buyer_id: str) -> dict:
         "created_at": datetime.utcnow(),
         "status": 0     #Order status can be 0 (placed), 1 (confirmed), or 2 (fulfilled)
     }
-    listing=listing.get_listing_by_id(listing_id)
+    listing_item = listing.get_listing_by_id(listing_id)
 
-    if not listing:
+    if not listing_item:
         return {"message": "Listing not found"}
-    if listing["quantity"] < quantity:
+    if listing_item["quantity"] < quantity:
         return {"message": "Insufficient quantity available"}
     
     result = orders_col.insert_one(order_data)
@@ -64,7 +63,7 @@ def check_order_quantity(listing_id: str, order_id: str) -> bool:
     order = get_order_by_id(order_id)
     if not order:
         return False
-    listing = listing.get_listing_by_id(listing_id)
-    if not listing:
+    listing_doc = listing.get_listing_by_id(listing_id)
+    if not listing_doc:
         return False
-    return listing["quantity"] >= order["quantity"]
+    return listing_doc["quantity"] >= order["quantity"]

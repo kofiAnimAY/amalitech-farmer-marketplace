@@ -1,8 +1,16 @@
-import { findUserById } from '../data/mockUsers';
+import { get } from '../services/apiClient';
+
+async function fetchFarmer(farmerId) {
+  try {
+    return await get(`/register/profile/${farmerId}`);
+  } catch {
+    return null;
+  }
+}
 
 /** Attaches farmerName/farmName/farmerVerified to a product for display purposes. */
-export function withFarmerInfo(product) {
-  const farmer = findUserById(product.farmerId);
+export async function withFarmerInfo(product) {
+  const farmer = await fetchFarmer(product.farmerId);
   return {
     ...product,
     farmerName: farmer?.name || 'Unknown farmer',
@@ -13,6 +21,6 @@ export function withFarmerInfo(product) {
   };
 }
 
-export function withFarmerInfoList(products) {
-  return products.map(withFarmerInfo);
+export async function withFarmerInfoList(products) {
+  return Promise.all(products.map(withFarmerInfo));
 }

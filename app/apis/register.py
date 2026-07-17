@@ -13,6 +13,27 @@ from app.db.userreg import add_user, login_user
 from dotenv import load_dotenv
 import os
 
+
+def _build_user_payload(user: dict) -> dict:
+    if not user:
+        return {}
+
+    user_id = user.get("_id") or user.get("id")
+    role = user.get("role", "buyer")
+    username = user.get("username") or user.get("name") or user.get("email")
+
+    return {
+        "id": str(user_id),
+        "name": username,
+        "username": username,
+        "email": user.get("email"),
+        "role": role,
+        "town": user.get("town", ""),
+        "farmName": user.get("farmName", ""),
+        "region": user.get("region", ""),
+        "businessName": user.get("businessName", ""),
+    }
+
 load_dotenv()  # Load environment variables from .env file
 JWT_KEY=os.getenv('JWT_KEY')
 
@@ -22,7 +43,11 @@ user_model = register_ns.model( "User",{
     "username":fields.String(required=True, description="The username of the user"),
     "email":fields.String(required=True, description="The email of the user"),
     "password":fields.String(required=True, description="The password of the user"),
-    "role":fields.String(required=True, description="The role of the user: farmer or buyer")
+    "role":fields.String(required=True, description="The role of the user: farmer or buyer"),
+    "town":fields.String(required=False, description="The town associated with the user"),
+    "farmName":fields.String(required=False, description="The farm name for farmer accounts"),
+    "region":fields.String(required=False, description="The region associated with the user"),
+    "businessName":fields.String(required=False, description="The business name for buyer accounts")
 })
 
 login_model = register_ns.model("Login", {
@@ -74,24 +99,58 @@ def role_required(*allowed_roles):
 class Register(Resource):
     @register_ns.expect(user_model)
     def post(self):
-        data = request.json
-        username = data.get("username")
+        data = request.json or {}
+        username = data.get("username") or data.get("name")
         password = data.get("password")
         email = data.get("email")
         role = data.get("role")
+        town = data.get("town")
+        farm_name = data.get("farmName")
+        region = data.get("region")
+        business_name = data.get("businessName")
 
-        user_id = add_user(username, password, email, role)
+        user_id = add_user(
+            username,
+            password,
+            email,
+            role,
+            town=town,
+            farm_name=farm_name,
+            region=region,
+            business_name=business_name,
+        )
         if isinstance(user_id, dict):
             return user_id, HTTPStatus.CONFLICT
 
-        return {"message": "User registered successfully", "user_id": user_id}, HTTPStatus.CREATED
+        user = {
+            "_id": user_id,
+            "username": username,
+            "email": email,
+            "role": role,
+            "town": town or "",
+            "farmName": farm_name or "",
+            "region": region or "",
+            "businessName": business_name or "",
+        }
+
+        token = jwt.encode({
+            "user_id": str(user_id),
+            "role": role,
+            "exp": datetime.now() + timedelta(hours=2)
+        }, JWT_KEY, algorithm="HS256")
+
+        return {
+            "message": "User registered successfully",
+            "user": _build_user_payload(user),
+            "token": token,
+        }, HTTPStatus.CREATED
 
 
 @register_ns.route("/login")
 class Login(Resource):
     @register_ns.expect(login_model)
     def post(self):
-        data = request.json
+        data = request.json or {}
         email = data.get("email")
         password = data.get("password")
 
@@ -105,5 +164,5 @@ class Login(Resource):
             "exp": datetime.now() + timedelta(hours=2)
         }, JWT_KEY, algorithm="HS256")
 
-        return {"token": token}, HTTPStatus.OK
+        return {"user": _build_user_payload(user), "token": token}, HTTPStatus.OK
 

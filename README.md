@@ -79,3 +79,71 @@ until checkout.
   in local markets (crates, bags, bunches, tubers, birds, etc).
 - Orders are split one order per farmer at checkout, mirroring how most multi-vendor
   marketplaces work — each farmer only ever sees and manages their own orders.
+
+## Running with the backend
+
+This repository now includes a small Flask backend under `app/` and a React frontend under `src/`.
+A `Makefile` is provided to simplify common workflows. The examples below assume the backend runs on `http://localhost:8000`.
+
+POSIX / Git Bash (Linux, macOS, Windows Git Bash):
+
+```bash
+# Install everything
+make install
+
+# Start backend only
+make run-backend
+
+# Start frontend only (Vite will use the backend at VITE_API_BASE_URL)
+make run-frontend
+
+# Start backend (background) and frontend together
+make dev
+
+# Run Python tests
+make test
+```
+
+Windows PowerShell (examples):
+
+```powershell
+# Install Python deps
+pip install -r requirements.txt
+
+# Install frontend deps
+npm install
+
+# Start backend (in a separate terminal)
+python app.py
+
+# Start frontend (in a separate terminal)
+$env:VITE_API_BASE_URL = 'http://localhost:8000'
+npm run dev
+```
+
+Notes:
+- The Makefile `dev` target uses POSIX backgrounding (`&`) and may not work in cmd.exe / PowerShell — use two terminals on Windows or run inside Git Bash / WSL.
+- If your backend uses a different host/port, set `VITE_API_BASE_URL` appropriately before starting the frontend.
+
+Helper scripts
+
+Two convenience scripts are provided in `scripts/` to run both servers locally:
+
+- POSIX: `scripts/run-dev.sh [API_BASE]` — starts `python app.py` in the background and runs Vite with `VITE_API_BASE_URL` set to `API_BASE` (default: `http://localhost:8000`).
+
+- PowerShell: `scripts/run-dev.ps1` — run with `.
+  scripts\run-dev.ps1 -ApiBase 'http://localhost:8000'` to start the backend and then the frontend (foreground).
+
+Examples:
+
+POSIX:
+```bash
+./scripts/run-dev.sh http://localhost:8000
+```
+
+PowerShell:
+```powershell
+.\scripts\run-dev.ps1 -ApiBase 'http://localhost:8000'
+```
+
+
