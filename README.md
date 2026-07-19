@@ -1,149 +1,253 @@
 # FarmConnect
 
-A mobile-first frontend for a smallholder farmer marketplace, connecting Ghanaian farmers
-directly with restaurants, households and retailers. **Frontend only** — all data is mocked
-and no real backend, auth, or payments are involved. Built with React, React Router, Tailwind
-CSS and Framer Motion.
+FarmConnect is a mobile-first marketplace for smallholder farmers and buyers in Ghana. The project now includes a Flask REST API for listings and orders, plus a React/Vite frontend for browsing and managing marketplace activity.
 
-## Getting started
+## Project overview
+
+- Frontend: React, React Router, Tailwind CSS, Vite
+- Backend: Flask + Flask-RESTX
+- Data layer: MongoDB through the app database helpers
+- Auth: JWT-based login and registration
+
+## Prerequisites
+
+Before running the app locally, make sure you have:
+
+- Python 3.10+ and pip
+- Node.js 18+ and npm
+- MongoDB running locally, or a reachable MongoDB URI
+
+Create a `.env` file in the project root with at least:
+
+```env
+JWT_KEY=change-me
+MONGO_URI=mongodb://localhost:27017/testdb
+DB_NAME=testdb
+MOCK_DB=true
+DEBUG=true
+```
+
+## Backend API
+
+The backend runs by default on `http://localhost:8000`.
+
+Swagger documentation is available at `http://localhost:8000/` when the backend is running.
+
+### Authentication
+
+All write operations require a bearer token returned by the auth endpoints.
+
+#### POST /register
+Create a new buyer or farmer account.
+
+Request body:
+
+```json
+{
+  "username": "kofi",
+  "email": "kofi@example.com",
+  "password": "secret123",
+  "role": "farmer",
+  "town": "Koforidua",
+  "farmName": "Kofi Farms",
+  "region": "Eastern Region",
+  "businessName": ""
+}
+```
+
+Response:
+
+```json
+{
+  "message": "User registered successfully",
+  "user": { "id": "...", "name": "...", "email": "...", "role": "farmer" },
+  "token": "..."
+}
+```
+
+#### POST /login
+Authenticate an existing user.
+
+Request body:
+
+```json
+{
+  "email": "kofi@example.com",
+  "password": "secret123"
+}
+```
+
+Response:
+
+```json
+{
+  "user": { "id": "...", "email": "...", "role": "farmer" },
+  "token": "..."
+}
+```
+
+### Listings
+
+#### GET /marketplace/listings
+Return all marketplace listings.
+
+Response:
+
+```json
+{
+  "listings": []
+}
+```
+
+#### POST /marketplace/listings
+Create a new listing. Requires a farmer token.
+
+Request body:
+
+```json
+{
+  "item_name": "Tomatoes",
+  "description": "Freshly harvested tomatoes",
+  "price": 12.5,
+  "quantity": 40,
+  "region": "Greater Accra",
+  "category": "Vegetables",
+  "unit": "crates",
+  "harvest_date": "2026-07-19"
+}
+```
+
+#### PATCH /marketplace/listings
+Update an existing listing. Requires the authenticated farmer to own that listing.
+
+Request body:
+
+```json
+{
+  "listing_id": "64b0...",
+  "new_name": "Tomatoes",
+  "new_price": 13.5,
+  "new_quantity": 30,
+  "description": "Updated description"
+}
+```
+
+#### DELETE /marketplace/listings
+Delete a listing. Requires the authenticated farmer to own that listing.
+
+Request body:
+
+```json
+{
+  "listing_id": "64b0..."
+}
+```
+
+### Orders
+
+#### POST /marketplace/order
+Place an order for a listing. Requires a buyer token.
+
+Request body:
+
+```json
+{
+  "listing_id": "64b0...",
+  "quantity": 5
+}
+```
+
+#### PATCH /marketplace/order
+Update the status of an existing order. Requires a farmer token.
+
+Request body:
+
+```json
+{
+  "order_id": "64b0...",
+  "new_status": "fulfilled"
+}
+```
+
+## Running the application
+
+### Option 1: Run backend and frontend separately
+
+#### Backend
 
 ```bash
-npm install
-npm run dev
-```
-
-Then open the printed local URL (defaults to `http://localhost:5173`).
-
-```bash
-npm run build     # production build to /dist
-npm run preview   # preview the production build locally
-```
-
-## Demo accounts
-
-Any mock account uses the password `password123`. The login screen also has one-tap
-"Farmer" / "Buyer" demo login buttons for convenience.
-
-| Role   | Email                          | Notes                          |
-|--------|---------------------------------|---------------------------------|
-| Farmer | kofi.mensah@farmconnect.test    | Vegetables, Eastern Region      |
-| Farmer | ama.boateng@farmconnect.test    | Grains/tubers, Ashanti Region   |
-| Buyer  | abena.osei@farmconnect.test     | Household, Greater Accra        |
-| Buyer  | kojo.appiah@farmconnect.test    | Restaurant, Greater Accra       |
-
-You can also register a brand-new account with either role from `/register`.
-
-## Project structure
-
-```
-src/
-  components/
-    auth/        RoleProtectedRoute — guards farmer-only / buyer-only routes
-    common/      Button, LoadingSpinner, SkeletonLoader, Badge, Modal, EmptyState, PageTransition
-    dashboard/   StatCard, DashboardCard (quick-action tiles)
-    layout/      Navbar, BottomNav (mobile tab bar), Layout, Footer
-    orders/      OrderCard, OrderTrackingTimeline
-    product/     ProductCard, SearchFilter
-  context/       AuthContext, CartContext, ToastContext
-  data/          mockUsers.js, mockProducts.js, mockOrders.js
-  pages/         Landing, Login, Register, Marketplace, ProductDetails, Cart, Checkout, ...
-    buyer/       BuyerDashboard
-    farmer/      FarmerDashboard, FarmerListings, ListingForm (create + edit), FarmerOrders
-  services/      authService, productService, orderService — the mock "API" layer
-  utils/         constants.js (enums/formatters), enrich.js (join product ↔ farmer)
-```
-
-## Where the real backend plugs in
-
-Every network-shaped call goes through `src/services/*Service.js`. Each function has a
-`TODO(backend)` comment naming the REST endpoint it should become
-(e.g. `GET /products`, `POST /orders`, `PATCH /orders/:id/status`). None of the UI code talks
-to mock data directly — pages and components only ever call these service functions, so
-swapping `simulateRequest(...)` for a real `fetch`/`axios` call is a localized change:
-
-- `authService.js` → `loginUser`, `registerUser`, `getUserProfile`, `updateUserProfile`
-- `productService.js` → `getProducts`, `getProductById`, `createListing`, `updateListing`, `deleteListing`
-- `orderService.js` → `getOrders`, `getOrderById`, `placeOrder`, `updateOrderStatus`
-
-`AuthContext` currently persists a mock session (`{ userId, token }`) to `localStorage`;
-replace that with real JWT/cookie session handling when auth is live. `CartContext` is
-frontend-only state (also persisted to `localStorage`) since carts don't need a backend
-until checkout.
-
-## Notes on mock data
-
-- Product photos are stock imagery (Unsplash), standing in for farmer-uploaded photos.
-  `ProductCard` and `ProductDetails` fall back to a clean category icon if an image ever
-  fails to load, so this is safe to swap for real uploads later.
-- Prices are in Ghanaian Cedis (GH₵), quantities/units reflect how produce is actually sold
-  in local markets (crates, bags, bunches, tubers, birds, etc).
-- Orders are split one order per farmer at checkout, mirroring how most multi-vendor
-  marketplaces work — each farmer only ever sees and manages their own orders.
-
-## Running with the backend
-
-This repository now includes a small Flask backend under `app/` and a React frontend under `src/`.
-A `Makefile` is provided to simplify common workflows. The examples below assume the backend runs on `http://localhost:8000`.
-
-POSIX / Git Bash (Linux, macOS, Windows Git Bash):
-
-```bash
-# Install everything
-make install
-
-# Start backend only
-make run-backend
-
-# Start frontend only (Vite will use the backend at VITE_API_BASE_URL)
-make run-frontend
-
-# Start backend (background) and frontend together
-make dev
-
-# Run Python tests
-make test
-```
-
-Windows PowerShell (examples):
-
-```powershell
-# Install Python deps
 pip install -r requirements.txt
-
-# Install frontend deps
-npm install
-
-# Start backend (in a separate terminal)
 python app.py
+```
 
-# Start frontend (in a separate terminal)
+The backend will start on `http://0.0.0.0:8000`.
+
+#### Frontend
+
+```bash
+npm install
 $env:VITE_API_BASE_URL = 'http://localhost:8000'
 npm run dev
 ```
 
-Notes:
-- The Makefile `dev` target uses POSIX backgrounding (`&`) and may not work in cmd.exe / PowerShell — use two terminals on Windows or run inside Git Bash / WSL.
-- If your backend uses a different host/port, set `VITE_API_BASE_URL` appropriately before starting the frontend.
+On Windows PowerShell, the frontend will run on the Vite URL printed in the terminal (usually `http://localhost:5173`).
 
-Helper scripts
+### Option 2: Use the provided helpers
 
-Two convenience scripts are provided in `scripts/` to run both servers locally:
+#### Make targets
 
-- POSIX: `scripts/run-dev.sh [API_BASE]` — starts `python app.py` in the background and runs Vite with `VITE_API_BASE_URL` set to `API_BASE` (default: `http://localhost:8000`).
+```bash
+make install
+make run-backend
+make run-frontend
+```
 
-- PowerShell: `scripts/run-dev.ps1` — run with `.
-  scripts\run-dev.ps1 -ApiBase 'http://localhost:8000'` to start the backend and then the frontend (foreground).
+You can also start both together in a compatible shell with:
 
-Examples:
+```bash
+make dev
+```
 
-POSIX:
+> The `make dev` target uses backgrounding, so it works best in Git Bash, WSL, or a Unix-like shell. On Windows PowerShell, use two terminals or the helper scripts.
+
+#### Helper scripts
+
+- POSIX:
+
 ```bash
 ./scripts/run-dev.sh http://localhost:8000
 ```
 
-PowerShell:
+- PowerShell:
+
 ```powershell
-.\scripts\run-dev.ps1 -ApiBase 'http://localhost:8000'
+./scripts/run-dev.ps1 -ApiBase 'http://localhost:8000'
+```
+
+## Demo accounts
+
+The frontend also includes demo accounts for quick testing. The default password is `password123`.
+
+| Role | Email | Notes |
+| --- | --- | --- |
+| Farmer | kofi.mensah@farmconnect.test | Vegetables, Eastern Region |
+| Farmer | ama.boateng@farmconnect.test | Grains and tubers, Ashanti Region |
+| Buyer | abena.osei@farmconnect.test | Household, Greater Accra |
+| Buyer | kojo.appiah@farmconnect.test | Restaurant, Greater Accra |
+
+## Project structure
+
+```text
+app/            Flask backend and API namespaces
+src/            React frontend and pages
+scripts/        Helper scripts for local development
+tests/          Python unit tests
+```
+
+## Running tests
+
+```bash
+pytest -q
 ```
 
 
